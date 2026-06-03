@@ -1,0 +1,56 @@
+[
+  {
+    "model": "authentification.utilisateur",
+    "pk": 1,
+    "fields": {
+      "username": "parent_test",
+      "first_name": "Marie",
+      "last_name": "Kamga",
+      "email": "marie.kamga@gmail.com",
+      "telephone": "699000001",
+      "statut": "actif",
+      "role": "parent",
+      "is_active": true,
+      "is_staff": false,
+      "password": "pbkdf2_sha256$720000$test$YmFzZTY0ZW5jb2RlZHBhc3N3b3Jk"
+    }
+  },
+  {
+    "model": "authentification.utilisateur",
+    "pk": 2,
+    "fields": {
+      "username": "medecin_test",
+      "first_name": "Paul",
+      "last_name": "Nkomo",
+      "email": "paul.nkomo@gmail.com",
+      "telephone": "699000002",
+      "statut": "actif",
+      "role": "medecin",
+      "is_active": true,
+      "is_staff": false,
+      "password": "pbkdf2_sha256$720000$test$YmFzZTY0ZW5jb2RlZHBhc3N3b3Jk"
+    }
+  },
+  {
+    "model": "authentification.utilisateur",
+    "pk": 3,
+    "fields": {
+      "username": "admin_test",
+      "first_name": "Jean",
+      "last_name": "Fotso",
+      "email": "jean.fotso@gmail.com",
+      "telephone": "699000003",
+      "statut": "actif",
+      "role": "admin",
+      "is_active": true,
+      "is_staff": true,
+      "password": "pbkdf2_sha256$720000$test$YmFzZTY0ZW5jb2RlZHBhc3N3b3Jk"
+    }
+  }
+] 
+from authentification.models import Utilisateur
+for u in Utilisateur.objects.filter(pk__in=[1,2,3]):
+    u.set_password("1234")
+    u.save()
+    print(f"{u.username} — mot de passe mis à jour")
+exit()

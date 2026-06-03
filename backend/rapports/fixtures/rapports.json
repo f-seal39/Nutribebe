@@ -1,0 +1,24 @@
+[
+  {
+    "model": "rapports.rapport",
+    "pk": 1,
+    "fields": {
+      "date_generation": "2024-10-05T09:30:00Z",
+      "type": "croissance",
+      "fichier_pdf": null,
+      "bebe": 1,
+      "utilisateur": 1
+    }
+  },
+  {
+    "model": "rapports.rapport",
+    "pk": 2,
+    "fields": {
+      "date_generation": "2024-11-20T10:00:00Z",
+      "type": "croissance",
+      "fichier_pdf": null,
+      "bebe": 2,
+      "utilisateur": 1
+    }
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "model": "notifications.notification",
+    "pk": 1,
+    "fields": {
+      "titre": "Rappel repas",
+      "contenu": "Il est 7h00 — heure de la bouillie de maïs pour Lionel.",
+      "date_envoi": "2024-11-11T07:00:00Z",
+      "type": "rappel_repas",
+      "lu": true,
+      "utilisateur": 1
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": 2,
+    "fields": {
+      "titre": "Rappel rendez-vous",
+      "contenu": "Votre rendez-vous avec Dr. Nkomo est demain à 10h00.",
+      "date_envoi": "2024-11-14T08:00:00Z",
+      "type": "rappel_rdv",
+      "lu": false,
+      "utilisateur": 1
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": 3,
+    "fields": {
+      "titre": "Nouveau message",
+      "contenu": "Madame Kamga vous a envoyé un message concernant Grace.",
+      "date_envoi": "2024-11-11T08:05:00Z",
+      "type": "message",
+      "lu": false,
+      "utilisateur": 2
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": 4,
+    "fields": {
+      "titre": "Anomalie de croissance",
+      "contenu": "Attention — le poids de Grace est en dessous de la norme OMS pour son âge.",
+      "date_envoi": "2024-11-20T09:00:00Z",
+      "type": "anomalie_croissance",
+      "lu": false,
+      "utilisateur": 1
+    }
+  }
+]

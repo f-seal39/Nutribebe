@@ -1,0 +1,28 @@
+[
+  {
+    "model": "profil.bebe",
+    "pk": 1,
+    "fields": {
+      "nom": "Lionel",
+      "date_naissance": "2024-03-15",
+      "sexe": "M",
+      "poids_naissance": 3.2,
+      "taille_naissance": 50.0,
+      "parent": 1,
+      "region": 1
+    }
+  },
+  {
+    "model": "profil.bebe",
+    "pk": 2,
+    "fields": {
+      "nom": "Grace",
+      "date_naissance": "2024-07-20",
+      "sexe": "F",
+      "poids_naissance": 3.0,
+      "taille_naissance": 49.0,
+      "parent": 1,
+      "region": 1
+    }
+  }
+]

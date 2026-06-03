@@ -1,0 +1,32 @@
+[
+  {
+    "model": "teleconsultation.consultation",
+    "pk": 1,
+    "fields": {
+      "date_demande": "2024-10-01T08:00:00Z",
+      "date_rdv": "2024-10-05",
+      "heure_rdv": "09:00:00",
+      "motif": "Contrôle de croissance mensuel",
+      "statut": "terminee",
+      "note_parent": 4.5,
+      "parent": 1,
+      "medecin": 1,
+      "bebe": 1
+    }
+  },
+  {
+    "model": "teleconsultation.consultation",
+    "pk": 2,
+    "fields": {
+      "date_demande": "2024-11-10T10:00:00Z",
+      "date_rdv": "2024-11-15",
+      "heure_rdv": "10:00:00",
+      "motif": "Fièvre persistante depuis 3 jours",
+      "statut": "confirmee",
+      "note_parent": null,
+      "parent": 1,
+      "medecin": 1,
+      "bebe": 2
+    }
+  }
+]

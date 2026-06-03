@@ -1,0 +1,57 @@
+[
+  {
+    "model": "croissance.mesure",
+    "pk": 1,
+    "fields": {
+      "date_mesure": "2024-04-15",
+      "poids": 4.5,
+      "taille": 55.0,
+      "age_en_mois": 1,
+      "bebe": 1
+    }
+  },
+  {
+    "model": "croissance.mesure",
+    "pk": 2,
+    "fields": {
+      "date_mesure": "2024-06-15",
+      "poids": 6.2,
+      "taille": 62.0,
+      "age_en_mois": 3,
+      "bebe": 1
+    }
+  },
+  {
+    "model": "croissance.mesure",
+    "pk": 3,
+    "fields": {
+      "date_mesure": "2024-09-15",
+      "poids": 7.8,
+      "taille": 68.0,
+      "age_en_mois": 6,
+      "bebe": 1
+    }
+  },
+  {
+    "model": "croissance.mesure",
+    "pk": 4,
+    "fields": {
+      "date_mesure": "2024-09-20",
+      "poids": 3.8,
+      "taille": 53.0,
+      "age_en_mois": 2,
+      "bebe": 2
+    }
+  },
+  {
+    "model": "croissance.mesure",
+    "pk": 5,
+    "fields": {
+      "date_mesure": "2024-11-20",
+      "poids": 5.5,
+      "taille": 60.0,
+      "age_en_mois": 4,
+      "bebe": 2
+    }
+  }
+]

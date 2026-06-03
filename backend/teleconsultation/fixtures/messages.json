@@ -1,0 +1,41 @@
+[
+  {
+    "model": "teleconsultation.message",
+    "pk": 1,
+    "fields": {
+      "contenu": "Bonjour Docteur, Lionel a de la fièvre depuis hier soir.",
+      "date_envoi": "2024-11-10",
+      "heure_envoi": "10:05:00",
+      "lu": true,
+      "type": "text",
+      "consultation": 2,
+      "expediteur": 1
+    }
+  },
+  {
+    "model": "teleconsultation.message",
+    "pk": 2,
+    "fields": {
+      "contenu": "Bonjour Madame Kamga, donnez-lui du paracétamol et surveillez la température.",
+      "date_envoi": "2024-11-10",
+      "heure_envoi": "11:30:00",
+      "lu": true,
+      "type": "text",
+      "consultation": 2,
+      "expediteur": 2
+    }
+  },
+  {
+    "model": "teleconsultation.message",
+    "pk": 3,
+    "fields": {
+      "contenu": "Merci Docteur, la fièvre a baissé ce matin.",
+      "date_envoi": "2024-11-11",
+      "heure_envoi": "08:00:00",
+      "lu": false,
+      "type": "text",
+      "consultation": 2,
+      "expediteur": 1
+    }
+  }
+]

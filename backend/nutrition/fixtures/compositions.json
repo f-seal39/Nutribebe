@@ -1,0 +1,18 @@
+[
+  {"model": "nutrition.composer", "pk": 1, "fields": {"repas": 1, "aliment": 1, "quantite": 50.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 2, "fields": {"repas": 2, "aliment": 2, "quantite": 40.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 3, "fields": {"repas": 2, "aliment": 11, "quantite": 10.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 4, "fields": {"repas": 3, "aliment": 3, "quantite": 1.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 5, "fields": {"repas": 4, "aliment": 5, "quantite": 100.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 6, "fields": {"repas": 5, "aliment": 4, "quantite": 1.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 7, "fields": {"repas": 6, "aliment": 6, "quantite": 100.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 8, "fields": {"repas": 7, "aliment": 8, "quantite": 80.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 9, "fields": {"repas": 8, "aliment": 1, "quantite": 40.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 10, "fields": {"repas": 8, "aliment": 11, "quantite": 20.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 11, "fields": {"repas": 9, "aliment": 7, "quantite": 100.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 12, "fields": {"repas": 10, "aliment": 10, "quantite": 100.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 13, "fields": {"repas": 11, "aliment": 14, "quantite": 50.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 14, "fields": {"repas": 11, "aliment": 9, "quantite": 50.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 15, "fields": {"repas": 12, "aliment": 12, "quantite": 80.0, "unite": "g"}},
+  {"model": "nutrition.composer", "pk": 16, "fields": {"repas": 12, "aliment": 15, "quantite": 50.0, "unite": "g"}}
+]

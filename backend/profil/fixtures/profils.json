@@ -1,0 +1,32 @@
+[
+  {
+    "model": "profil.parent",
+    "pk": 1,
+    "fields": {
+      "utilisateur": 1,
+      "profession": "Enseignante",
+      "adresse": "Douala, Akwa"
+    }
+  },
+  {
+    "model": "profil.medecin",
+    "pk": 1,
+    "fields": {
+      "utilisateur": 2,
+      "numero_ordre": "CM-PED-2021-0042",
+      "specialite": "Pédiatrie",
+      "hopital_cabinet": "Hôpital Général de Douala",
+      "ville": "Douala",
+      "disponibilite": true,
+      "note_moyenne": 0.0
+    }
+  },
+  {
+    "model": "authentification.administrateur",
+    "pk": 1,
+    "fields": {
+      "utilisateur": 3,
+      "niveau_acces": "super_admin"
+    }
+  }
+]

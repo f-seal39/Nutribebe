@@ -1,0 +1,7 @@
+[
+  {"model": "nutrition.categorie", "pk": 1, "fields": {"libelle": "Céréales", "description": "Maïs, mil, sorgho, riz"}},
+  {"model": "nutrition.categorie", "pk": 2, "fields": {"libelle": "Fruits", "description": "Banane, mangue, papaye, avocat"}},
+  {"model": "nutrition.categorie", "pk": 3, "fields": {"libelle": "Légumes", "description": "Légumes feuilles, tomates, carottes"}},
+  {"model": "nutrition.categorie", "pk": 4, "fields": {"libelle": "Protéines", "description": "Poisson, poulet, légumineuses"}},
+  {"model": "nutrition.categorie", "pk": 5, "fields": {"libelle": "Tubercules", "description": "Manioc, igname, macabo, plantain"}}
+]

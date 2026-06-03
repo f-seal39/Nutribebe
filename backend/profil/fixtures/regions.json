@@ -1,0 +1,8 @@
+
+[
+  {"model": "profil.region", "pk": 1, "fields": {"nom": "Douala", "zone": "Littoral"}},
+  {"model": "profil.region", "pk": 2, "fields": {"nom": "Yaoundé", "zone": "Centre"}},
+  {"model": "profil.region", "pk": 3, "fields": {"nom": "Bafoussam", "zone": "Ouest"}},
+  {"model": "profil.region", "pk": 4, "fields": {"nom": "Bamenda", "zone": "Nord-Ouest"}},
+  {"model": "profil.region", "pk": 5, "fields": {"nom": "Garoua", "zone": "Nord"}}
+]

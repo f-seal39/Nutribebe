@@ -1,199 +1,172 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
-import BottomNavBar from "../components/BottomNavBar";
+import { formatHeure } from "../utils/authRoutes";
+import { COLORS } from "../constants/colors";
+import { Home, Utensils, MessageCircle, User, ChevronDown, ChevronUp } from "lucide-react";
+
+function getMealTypeInfo(heureStr) {
+  if (!heureStr) return { icon: "sun", label: "Repas" };
+  const [h] = heureStr.split(":").map(Number);
+  if (h >= 5 && h < 12) return { icon: "sun", label: "Petit-déjeuner" };
+  if (h >= 12 && h < 15) return { icon: "utensils", label: "Déjeuner" };
+  if (h >= 15 && h < 18) return { icon: "coffee", label: "Goûter" };
+  if (h >= 18 && h < 22) return { icon: "moon", label: "Dîner" };
+  return { icon: "utensils", label: "Repas" };
+}
 
 export default function Repas() {
-  // --- ÉTATS CONNECTÉS À VOTRE BACKEND DJANGO ---
-  const [repasListe, setRepasListe] = useState([]);
+  const navigate = useNavigate();
+  const [repasProgrammes, setRepasProgrammes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jourSelectionne, setJourSelectionne] = useState(13); // Jour actif du calendrier
+  const [error, setError] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
+  const [compositions, setCompositions] = useState({});
 
-  // --- CHARGEMENT DU CATALOGUE DE REPAS ---
   useEffect(() => {
-    const fetchRepasData = async () => {
+    const fetchPlanning = async () => {
       try {
-        const data = await api.getRepas();
-        setRepasListe(data);
-      } catch (error) {
-        console.error("Erreur de récupération du catalogue de repas :", error);
+        const data = await api.getRepasProgrammesAujourdhui();
+        const sorted = [...data].sort((a, b) => formatHeure(a.heure).localeCompare(formatHeure(b.heure)));
+        setRepasProgrammes(sorted);
+      } catch (err) {
+        console.error(err);
+        setError("Impossible de charger le planning des repas.");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchRepasData();
+    fetchPlanning();
   }, []);
 
-  // Gestion de l'interaction des favoris (Mise à jour locale de l'état)
-  const handleToggleFavori = (id) => {
-    setRepasListe((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, is_favori: !item.is_favori } : item
-      )
-    );
+  const handleViewDetails = async (repasId) => {
+    if (expandedId === repasId) {
+      setExpandedId(null);
+      return;
+    }
+    if (!compositions[repasId]) {
+      try {
+        const res = await api.get(`nutrition/repas/${repasId}/composition/`);
+        setCompositions(prev => ({ ...prev, [repasId]: res.data }));
+      } catch (err) { console.error(err); }
+    }
+    setExpandedId(repasId);
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-primary p-6">
-        <div className="text-center">
-          <h2 className="text-headline-xl font-bold animate-pulse">NutriBébé</h2>
-          <p className="text-on-surface-variant text-label-md">Chargement du catalogue de nutrition...</p>
-        </div>
-      </div>
-    );
+    return <div style={{ textAlign: "center", padding: "2rem" }}>Chargement du planning...</div>;
   }
 
-  // Jours du calendrier horizontal Stitch
-  const joursCalendrier = [
-    { nom: "LUN", num: 12 },
-    { nom: "MAR", num: 13 },
-    { nom: "MER", num: 14 },
-    { nom: "JEU", num: 15 },
-    { nom: "VEN", num: 16 },
-    { nom: "SAM", num: 17 },
-    { nom: "DIM", num: 18 },
-  ];
-
   return (
-    <div className="bg-background text-on-background font-body-md antialiased mb-24 min-h-screen">
-      
-      {/* TopAppBar */}
-      <header className="w-full sticky top-0 z-40 bg-surface flex items-center justify-between px-margin-mobile py-stack-sm border-b border-outline-variant/30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-secondary-container overflow-hidden ring-2 ring-primary/10">
-            <img 
-              alt="Profil Parent" 
-              className="w-full h-full object-cover" 
-              src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=200&h=200&q=80" 
-            />
-          </div>
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">NutriBébé</h1>
-        </div>
-        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
-          <span className="material-symbols-outlined text-primary">Notifications</span>
-        </button>
-      </header>
-
-      <main className="max-w-[900px] mx-auto px-margin-mobile">
+    <div style={{ backgroundColor: "#1B3A4B", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+      <div style={{ width: "100%", maxWidth: "412px", backgroundColor: COLORS.background, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         
-        {/* En-tête de la page */}
-        <section className="pt-stack-md pb-stack-sm">
-          <div className="flex items-end justify-between mb-stack-sm">
-            <div>
-              <p className="text-on-surface-variant font-label-md text-label-md">Planning Hebdomadaire</p>
-              <h2 className="font-headline-xl text-headline-xl text-primary">Menu Planner</h2>
-            </div>
-            <button className="bg-primary text-on-primary px-4 py-2 rounded-full font-label-md text-label-md flex items-center gap-2 shadow-sm active:scale-95 transition-transform">
-              <span className="material-symbols-outlined text-[20px]">auto_fix</span>
-              Générer un menu
-            </button>
+        {/* Header inchangé */}
+        <header style={{
+          position: "sticky", top: 0, zIndex: 40,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "0 20px", height: "64px",
+          backgroundColor: "rgba(248,249,250,0.92)", backdropFilter: "blur(8px)",
+          borderBottom: `1px solid ${COLORS.outlineVariant}30`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Utensils size={24} color={COLORS.primary} />
+            <span style={{ fontSize: "20px", fontWeight: 800, color: COLORS.primary }}>Planning repas</span>
           </div>
-        </section>
+          <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none" }}>
+            <Home size={20} color={COLORS.primary} />
+          </button>
+        </header>
 
-        {/* Vue Calendrier Hebdomadaire (Horizontal) */}
-        <section className="mb-stack-lg">
-          <div className="flex overflow-x-auto no-scrollbar snap-x-mandatory gap-3 py-1">
-            {joursCalendrier.map((jour) => {
-              const estActif = jourSelectionne === jour.num;
+        <main style={{ flex: 1, padding: "20px", paddingBottom: "80px" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "20px" }}>Repas du {new Date().toLocaleDateString()}</h2>
+          {error && <div style={{ backgroundColor: COLORS.errorContainer, padding: "12px", borderRadius: "12px", marginBottom: "16px", color: COLORS.onErrorContainer }}>{error}</div>}
+          
+          {repasProgrammes.length === 0 && !error && (
+            <div style={{ textAlign: "center", padding: "32px", backgroundColor: COLORS.surfaceContainerLowest, borderRadius: "20px" }}>
+              <Utensils size={48} color={COLORS.onSurfaceVariant} style={{ margin: "0 auto" }} />
+              <p style={{ marginTop: "12px" }}>Aucun repas programmé aujourd'hui.</p>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {repasProgrammes.map(item => {
+              const { icon, label } = getMealTypeInfo(formatHeure(item.heure));
               return (
-                <button
-                  key={jour.num}
-                  onClick={() => setJourSelectionne(jour.num)}
-                  className={`flex-shrink-0 w-16 h-24 flex flex-col items-center justify-center rounded-2xl snap-center transition-all ${
-                    estActif
-                      ? "bg-primary text-on-primary shadow-lg border-2 border-primary-container scale-105"
-                      : "bg-surface-container-highest text-on-surface-variant border border-transparent hover:border-outline-variant"
-                  }`}
-                >
-                  <span className="font-label-sm text-label-sm">{jour.nom}</span>
-                  <span className="font-headline-lg text-headline-lg">{jour.num}</span>
-                </button>
+                <div key={item.id} style={{ backgroundColor: COLORS.surfaceContainerLowest, borderRadius: "20px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ padding: "16px" }}>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <div style={{ width: "70px", height: "70px", borderRadius: "16px", overflow: "hidden", flexShrink: 0, backgroundColor: COLORS.surfaceContainer }}>
+                        {item.repas?.image ? (
+                          <img src={item.repas.image} alt={item.repas.nom} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Utensils size={28} color={COLORS.primary} />
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <h3 style={{ fontSize: "16px", fontWeight: 700 }}>{item.repas?.nom}</h3>
+                          <span style={{ backgroundColor: COLORS.primaryFixed, padding: "4px 8px", borderRadius: "999px", fontSize: "12px", fontWeight: 600 }}>
+                            {formatHeure(item.heure)}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: "12px", color: COLORS.onSurfaceVariant, marginTop: "6px" }}>{item.repas?.description?.slice(0, 80)}...</p>
+                        <button onClick={() => handleViewDetails(item.repas.id)} style={{ marginTop: "8px", fontSize: "12px", color: COLORS.primary, fontWeight: 600, display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer" }}>
+                          {expandedId === item.repas.id ? "Masquer" : "Voir la composition"}
+                          {expandedId === item.repas.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                    {expandedId === item.repas.id && compositions[item.repas.id] && (
+                      <div style={{ marginTop: "12px", backgroundColor: COLORS.surfaceContainer, borderRadius: "16px", padding: "12px" }}>
+                        <p style={{ fontWeight: 600, marginBottom: "8px" }}>Ingrédients :</p>
+                        <ul style={{ listStyle: "none", padding: 0 }}>
+                          {compositions[item.repas.id].map((comp, idx) => (
+                            <li key={idx} style={{ fontSize: "12px", padding: "4px 0", borderBottom: `1px solid ${COLORS.outlineVariant}20` }}>
+                              {comp.quantite} {comp.unite} de {comp.aliment}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-        </section>
+        </main>
 
-        {/* Astuce Légère / Conseil en haut du flux */}
-        <div className="bg-primary-container text-on-primary-container p-4 rounded-xl mb-stack-md flex items-center gap-3">
-          <span className="material-symbols-outlined flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
-          <p className="text-sm font-body-md opacity-90">
-            Voici les repas disponibles pour composer ou suivre l'alimentation de votre enfant aujourd'hui.
-          </p>
-        </div>
-
-        {/* Flux Central des Cartes de Repas (Prend toute la largeur disponible) */}
-        <section className="space-y-gutter">
-          {repasListe.map((repas) => (
-            <div 
-              key={repas.id} 
-              className="bg-white rounded-xl overflow-hidden border border-outline-variant flex flex-col sm:flex-row shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow"
+        {/* Barre de navigation modifiée : remplacement de "Croissance" par "Messagerie" */}
+        <nav style={{
+          position: "sticky", bottom: 0, width: "100%", zIndex: 50,
+          display: "flex", justifyContent: "space-around", alignItems: "center",
+          padding: "10px 16px",
+          backgroundColor: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)",
+          borderTop: `1px solid ${COLORS.outlineVariant}30`,
+        }}>
+          {[
+            { icon: Home, label: "Accueil", path: "/dashboard" },
+            { icon: Utensils, label: "Repas", path: "/repas" },
+            { icon: MessageCircle, label: "Messages", path: "/messagerie" },
+            { icon: User, label: "Profil", path: "/profil" },
+          ].map((item) => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                background: "none", border: "none", cursor: "pointer",
+                color: window.location.pathname === item.path ? COLORS.primary : COLORS.onSurfaceVariant,
+              }}
             >
-              {/* Image & Type de repas */}
-              <div className="sm:w-48 h-48 sm:h-auto relative bg-surface-container flex-shrink-0">
-                <img 
-                  alt={repas.nom} 
-                  className="w-full h-full object-cover" 
-                  src={repas.image || "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=200&h=200&q=80"} 
-                />
-                <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-label-sm font-label-sm text-primary flex items-center gap-1 shadow-sm">
-                  <span className="material-symbols-outlined text-[14px]">
-                    {repas.type_repas?.toLowerCase() === "breakfast" ? "wb_sunny" : repas.type_repas?.toLowerCase() === "lunch" ? "lunch_dining" : "dinner_dining"}
-                  </span>
-                  {repas.type_repas || "Repas"}
-                </div>
-              </div>
-
-              {/* Contenu textuel et détails */}
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold">{repas.nom}</h4>
-                    <button 
-                      onClick={() => handleToggleFavori(repas.id)}
-                      className="focus:outline-none"
-                    >
-                      <span 
-                        className={`material-symbols-outlined transition-colors ${repas.is_favori ? "text-error" : "text-on-surface-variant"}`}
-                        style={{ fontVariationSettings: repas.is_favori ? "'FILL' 1" : "'FILL' 0" }}
-                      >
-                        favorite
-                      </span>
-                    </button>
-                  </div>
-                  <p className="text-body-md font-body-md text-on-surface-variant mb-4">
-                    {repas.description || "Aucune description fournie pour cette recette."}
-                  </p>
-                </div>
-
-                {/* Temps de préparation et Coût en FCFA */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-50">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-surface-container-high px-3 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant">
-                      {repas.temps_preparation || "20"} min
-                    </span>
-                    <span className="bg-secondary-fixed text-on-secondary-fixed-variant px-3 py-1 rounded-full text-label-sm font-label-sm font-bold">
-                      {repas.cout_estime_fcfa} FCFA
-                    </span>
-                  </div>
-                  <span className="text-xs text-outline-variant font-mono">#{repas.id}</span>
-                </div>
-              </div>
-            </div>
+              <item.icon size={20} />
+              <span style={{ fontSize: "10px", marginTop: "2px" }}>{item.label}</span>
+            </button>
           ))}
-
-          {/* État si la base de données ne renvoie rien */}
-          {repasListe.length === 0 && (
-            <div className="text-center p-12 bg-white rounded-xl border border-outline-variant border-dashed">
-              <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">restaurant_menu</span>
-              <p className="text-on-surface-variant font-body-md italic">Aucun repas disponible dans la base de données.</p>
-            </div>
-          )}
-        </section>
-      </main>
-
-      {/* Barre de navigation basse */}
-      <BottomNavBar />
+        </nav>
+      </div>
     </div>
   );
 }

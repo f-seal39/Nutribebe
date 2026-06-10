@@ -375,6 +375,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getHomeRouteForRole } from "../utils/authRoutes";
 
 const COLORS = {
   primary: "#0f5238",
@@ -449,11 +450,15 @@ export default function Splash() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const utilisateur = localStorage.getItem("utilisateur");
-    if (token && utilisateur) {
+    const utilisateurRaw = localStorage.getItem("utilisateur");
+    if (token && utilisateurRaw) {
       setEstConnecte(true);
-      // 💡 Redirection vers le module actif plutôt que vers le Dashboard commenté
-      navigate("/medecin/repas"); 
+      try {
+        const utilisateur = JSON.parse(utilisateurRaw);
+        navigate(getHomeRouteForRole(utilisateur.role), { replace: true });
+      } catch {
+        navigate("/dashboard", { replace: true });
+      }
     }
   }, [navigate]);
 

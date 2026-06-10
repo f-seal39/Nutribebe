@@ -6,11 +6,11 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Utilisateur, Invitation
 from .serializers import UtilisateurSerializer, InscriptionSerializer, InvitationSerializer
+from .services import serialize_session_payload
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-parser_classes = [MultiPartParser, FormParser, JSONParser]
-
 class AuthViewSet(viewsets.ViewSet):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def inscription(self, request):
@@ -18,10 +18,11 @@ class AuthViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             utilisateur = serializer.save()
             refresh = RefreshToken.for_user(utilisateur)
+            session = serialize_session_payload(utilisateur)
             return Response({
-                'token': str(refresh.access_token),
-                'refresh': str(refresh),
-                'utilisateur': UtilisateurSerializer(utilisateur).data
+                "token": str(refresh.access_token),
+                "refresh": str(refresh),
+                **session,
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -32,18 +33,18 @@ class AuthViewSet(viewsets.ViewSet):
         utilisateur = authenticate(request, username=username, password=password)
         if utilisateur:
             refresh = RefreshToken.for_user(utilisateur)
+            session = serialize_session_payload(utilisateur)
             return Response({
-                'token': str(refresh.access_token),
-                'refresh': str(refresh),
-                'utilisateur': UtilisateurSerializer(utilisateur).data
+                "token": str(refresh.access_token),
+                "refresh": str(refresh),
+                **session,
             })
         return Response({'error': 'Email ou mot de passe incorrect'},
                         status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def profil(self, request):
-        serializer = UtilisateurSerializer(request.user)
-        return Response(serializer.data)
+        return Response(serialize_session_payload(request.user))
 
 class InvitationViewSet(viewsets.ModelViewSet):
     queryset = Invitation.objects.all()

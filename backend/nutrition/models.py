@@ -29,6 +29,7 @@ class Repas(models.Model):
     cout_estime_fcfa = models.FloatField()
     description = models.TextField(blank=True)
     recette = models.TextField(blank=True)
+    image = models.ImageField(upload_to='repas/', null=True, blank=True, max_length=255)
 
 
 class HoraireRepas(models.Model):

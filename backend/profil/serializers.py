@@ -1,36 +1,6 @@
-# from rest_framework import serializers
-# from .models import Parent, Medecin, Bebe, Region
-
-# class RegionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Region
-#         fields = ['id', 'nom', 'zone']
-
-# class ParentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Parent
-#         fields = ['id', 'utilisateur', 'profession', 'adresse']
-
-# class MedecinSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Medecin
-#         fields = ['id', 'utilisateur', 'numero_ordre', 'specialite',
-#                   'hopital_cabinet', 'ville', 'disponibilite', 'note_moyenne']
-
-# class BebeSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Bebe
-#         fields = ['id', 'nom', 'date_naissance', 'sexe',
-#                   'poids_naissance', 'taille_naissance', 'parent', 'region']
-
 from rest_framework import serializers
 from django.db import transaction
-from authentification.models import Utilisateur
-from profil.models import Parent, Medecin  # Adaptez l'import selon vos apps
-
-
-# C:\Users\FSEAL\Desktop\Nutribebe\backend\profil\serializers.py
-from rest_framework import serializers
+from django.core.validators import FileExtensionValidator
 from authentification.models import Utilisateur
 from .models import Parent, Medecin, Bebe, Region
 
@@ -53,16 +23,41 @@ class ParentSerializer(serializers.ModelSerializer):
 
 class MedecinSerializer(serializers.ModelSerializer):
     utilisateur = UtilisateurSerializer(read_only=True)
+    diplome = serializers.FileField(
+        required=False,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
+    )
     
     class Meta:
         model = Medecin
-        fields = ['id', 'utilisateur', 'numero_ordre', 'specialite', 
-                  'hopital_cabinet', 'ville', 'disponibilite', 'note_moyenne']
+        fields = [
+            'id', 'utilisateur', 'numero_ordre', 'specialite',
+            'hopital_cabinet', 'ville', 'diplome', 'disponibilite', 'note_moyenne',
+        ]
+        read_only_fields = ['id', 'utilisateur', 'note_moyenne']
 
 class BebeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bebe
         fields = '__all__'
+        read_only_fields = ['parent']
+    
+    def validate_date_naissance(self, value):
+        from datetime import date
+        if value > date.today():
+            raise serializers.ValidationError("La date de naissance ne peut pas être dans le futur.")
+        return value
+    
+    def validate_poids_naissance(self, value):
+        if value <= 0 or value > 10:  # Realistic range: 0.5kg to 10kg
+            raise serializers.ValidationError("Le poids de naissance doit être entre 0.5 et 10 kg.")
+        return value
+    
+    def validate_taille_naissance(self, value):
+        if value <= 0 or value > 100:  # Realistic range: 30cm to 100cm
+            raise serializers.ValidationError("La taille de naissance doit être entre 30 et 100 cm.")
+        return value
+    
 
 class RegisterSerializer(serializers.ModelSerializer):
     # Champs virtuels capturés lors de l'inscription
@@ -104,6 +99,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             # 1. Création de l'utilisateur de base
             user = Utilisateur.objects.create_user(**validated_data)
+            user.role = role   # ← AJOUTER CETTE LIGNE
+            user.save()        # ← AJOUTER CETTE LIGNE
             
             # 2. Création du profil lié selon le choix du rôle
             if role == 'medecin':
@@ -146,3 +143,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         else:
             data['role'] = 'admin'
         return data
+    def create(self, validated_data):
+        role = validated_data.pop('role')
+        # ... extraction des autres champs ...
+        user = Utilisateur.objects.create_user(**validated_data)
+        user.role = role   # ← AJOUTER CETTE LIGNE
+        user.save()        # ← AJOUTER CETTE LIGNE
+        # ... création du profil Parent ou Medecin ...
+        return user

@@ -10,7 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.ngrok-free.app']
-
+from decouple import config
+import dj_database_url
 import os
 from pathlib import Path
 from decouple import config
@@ -27,17 +28,20 @@ VAPID_PRIVATE_KEY = config('VAPID_PRIVATE_KEY', default='')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5dfz%-w@735idq@7mp4bi5cf!p)pi(s@^!+yt72ogn2(p@#!ax'
+#SECRET_KEY = 'django-insecure-5dfz%-w@735idq@7mp4bi5cf!p)pi(s@^!+yt72ogn2(p@#!ax'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-5dfz%-w@735idq@7mp4bi5cf!p)pi(s@^!+yt72ogn2(p@#!ax')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    '.ngrok-free.dev',
-    '.ngrok-free.app',
-]
+# ALLOWED_HOSTS = [
+#     '127.0.0.1',
+#     'localhost',
+#     '.ngrok-free.dev',
+#     '.ngrok-free.app',
+# ]
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     "daphne",
@@ -61,10 +65,12 @@ INSTALLED_APPS = [
     'notifications',
     'rapports',
     'paiement',
+    'admin_dashboard',
     'rest_framework_simplejwt',
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',#Added
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -95,13 +101,22 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = "backend.asgi.application"
 
 # Channels layer configuration
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [config('REDIS_URL')],
+#         },
+#     }
+# }
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [config('REDIS_URL', default='redis://localhost:6379')],
         },
-    }
+    },
 }
 
 # Celery Configuration
@@ -147,14 +162,18 @@ CELERY_TIMEZONE = 'UTC'
 #     }
 # }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'nutribebecam',
-        'USER': 'postgres',
-        'PASSWORD': 'fseal39',  # ← ton vrai mot de passe
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'nutribebecam',
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'fseal39',  # ← ton vrai mot de passe
+    #     'HOST': 'localhost',
+    #     'PORT': '5432',
+    #     'default': dj_database_url.config(default=config('DATABASE_URL'))
+    # }
+    
+    'default': dj_database_url.config(default=config('DATABASE_URL'))
+    
 }
 
 # Password validation
@@ -216,6 +235,8 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 # MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -224,6 +245,8 @@ from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'TOKEN_OBTAIN_SERIALIZER': 'authentification.serializers.CustomTokenObtainPairSerializer',
+
 }
 
 
@@ -241,3 +264,17 @@ CACHES = {
 # Utilisation de Memurai pour stocker les sessions
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}

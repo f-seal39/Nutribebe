@@ -118,3 +118,14 @@ export default {
   },
   plugins: [],
 }
+
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#0f5238',
+        terracotta: '#d47a5a',
+      },
+    },
+  },
+};

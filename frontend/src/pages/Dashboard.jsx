@@ -1,243 +1,165 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
-import BottomNavBar from "../components/BottomNavBar";
+import { COLORS } from "../constants/colors";
+import { Home, Utensils, MessageCircle, User, Baby, Calendar, Heart, Smile } from "lucide-react";
 
 export default function Dashboard() {
-  // --- ÉTATS PARAMÉTRÉS SUR LE BACKEND DJANGO ---
-  const [bebe, setBebe] = useState(null);
-  const [repasProgrammes, setRepasProgrammes] = useState([]);
+  const navigate = useNavigate();
+  const [bebes, setBebes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Indicateurs de santé et nutrition (statiques ou calculés)
-  const [metrics] = useState({
-    healthScore: 85,
-    caloriesCurrent: 1120,
-    caloriesGoal: 1400,
-    protein: "38g",
-    fiber: "16g"
-  });
-
-  const [dashOffset, setDashOffset] = useState(364.4);
-
-  // --- CHARGEMENT DES DONNÉES VIA LE SERVICE API ---
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchBebes = async () => {
       try {
-        // 1. Récupération du profil du bébé (Module M2 — profil)
-        const bebesData = await api.getBebes();
-        if (bebesData && bebesData.length > 0) {
-          setBebe(bebesData[0]); // On prend le premier bébé lié au compte parent
-        }
-
-        // 2. Récupération des repas planifiés aujourd'hui par l'admin (Module M3 — nutrition)
-        const repasData = await api.getRepasProgrammesAujourdhui();
-        // Tri chronologique selon l'heure programmée
-        const sortedRepas = repasData.sort((a, b) => a.heure.localeCompare(b.heure));
-        setRepasProgrammes(sortedRepas);
-      } catch (error) {
-        console.error("Erreur lors du chargement du Dashboard :", error);
+        const data = await api.getBebes();
+        setBebes(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError("Impossible de charger vos enfants.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDashboardData();
+    fetchBebes();
   }, []);
 
-  
-
-  // Animation de la jauge nutritionnelle circulaire
-  useEffect(() => {
-    if (!loading) {
-      const targetOffset = 364.4 - (364.4 * metrics.healthScore) / 100;
-      const timer = setTimeout(() => setDashOffset(targetOffset), 150);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, metrics.healthScore]);
-
-  // --- ACTION : BASCULER L'ALARME DU REPAS (Lecture/Écriture légère autorisée au parent) ---
-  const handleAlarmToggle = async (id) => {
-    try {
-      const data = await api.toggleAlarmeRepas(id);
-      // Synchronisation immédiate de l'état de l'alarme renvoyé par Django
-      setRepasProgrammes(prev =>
-        prev.map(item => item.id === id ? { ...item, active_alarm: data.active_alarm } : item)
-      );
-    } catch (error) {
-      console.error("Erreur lors de la modification de l'alarme :", error);
-    }
+  const calculerAge = (dateNaissance) => {
+    const today = new Date();
+    const birth = new Date(dateNaissance);
+    let ageMois = (today.getFullYear() - birth.getFullYear()) * 12;
+    ageMois += today.getMonth() - birth.getMonth();
+    if (ageMois < 0) ageMois = 0;
+    if (ageMois < 12) return `${ageMois} mois`;
+    const annees = Math.floor(ageMois / 12);
+    return `${annees} an${annees > 1 ? "s" : ""}`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-primary p-6">
-        <div className="text-center">
-          <h2 className="text-headline-xl font-bold animate-pulse">NutriBébé</h2>
-          {/* <p className="text-on-surface-variant text-label-md">Synchronisation avec le serveur Django...</p> */}
-        </div>
-      </div>
-    );
-  }
-
-  // Identification du prochain repas à afficher en vedette
-  const heureActuelle = new Date().toTimeString().split(' ')[0];
-  const prochainRepas = repasProgrammes.find(item => item.heure >= heureActuelle) || repasProgrammes[0];
+  if (loading) return <div style={{ textAlign: "center", padding: "2rem" }}>Chargement...</div>;
 
   return (
-    <div className="max-w-[1200px] mx-auto min-h-screen bg-background text-on-background">
-      
-      {/* TopAppBar de Stitch avec la vraie photo du bébé */}
-      <header className="w-full sticky top-0 z-40 bg-white/90 backdrop-blur flex items-center justify-between px-margin-mobile py-stack-sm border-b border-outline-variant">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-secondary-container overflow-hidden ring-2 ring-primary/10">
-            <img 
-              alt="Profil Bébé" 
-              className="w-full h-full object-cover" 
-              src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=200&h=200&q=80" 
-            />
+    <div style={{ backgroundColor: "#1B3A4B", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+      <div style={{ width: "100%", maxWidth: "412px", backgroundColor: COLORS.background, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        <header style={{
+          position: "sticky", top: 0, zIndex: 40,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "0 20px", height: "64px",
+          backgroundColor: "rgba(248,249,250,0.92)", backdropFilter: "blur(8px)",
+          borderBottom: `1px solid ${COLORS.outlineVariant}30`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Baby size={24} color={COLORS.primary} />
+            <span style={{ fontSize: "20px", fontWeight: 800, color: COLORS.primary }}>NutriBébéCam</span>
           </div>
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">NutriBébé</h1>
-        </div>
-        <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
-          <span className="material-symbols-outlined text-primary">Notifications</span>
-        </button>
-      </header>
+          <button onClick={() => navigate("/profil")} style={{ background: "none", border: "none" }}>
+            <User size={24} color={COLORS.primary} />
+          </button>
+        </header>
 
-      <main className="px-margin-mobile pt-stack-md">
-        
-        {/* Section de bienvenue */}
-        <section className="mb-stack-sm">
-          <p className="text-on-surface-variant font-label-md text-label-md">Espace Parent</p>
-          <h2 className="font-headline-xl text-headline-xl text-primary">
-            Le suivi de <span className="underline decoration-secondary-container">{bebe?.nom || "votre bébé"}</span> est à jour
-          </h2>
-        </section>
-
-        {/* Bento Grid des indicateurs nutritionnels du jour */}
-        <section className="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-stack-md">
-          
-          {/* Jauge Circulaire de Score Nutritionnel */}
-          <div className="md:col-span-5 bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col items-center justify-center text-center">
-            <h3 className="text-label-md font-bold text-on-surface-variant mb-4">Indice Nutritionnel du jour</h3>
-            <div className="flex items-center justify-center relative h-32 w-32 mb-4">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle className="text-gray-100" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" strokeWidth="8"></circle>
-                <circle 
-                  className="text-primary rounded-full" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" strokeWidth="8"
-                  strokeDasharray="364.4" 
-                  strokeDashoffset={dashOffset}
-                  style={{ transition: "stroke-dashoffset 1s ease-out" }}
-                ></circle>
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-headline-lg text-headline-lg text-on-surface">{metrics.healthScore}%</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">Objectif</span>
-              </div>
-            </div>
+        <main style={{ flex: 1, padding: "20px", paddingBottom: "80px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <Smile size={24} color={COLORS.primary} />
+            <h2 style={{ fontSize: "22px", fontWeight: 700, margin: 0 }}>Bonjour</h2>
           </div>
+          <p style={{ fontSize: "14px", color: COLORS.onSurfaceVariant, marginBottom: "24px" }}>
+            Voici le récapitulatif de vos enfants
+          </p>
 
-          {/* Énergie & Macro-nutriments */}
-          <div className="md:col-span-7 flex flex-col justify-between gap-3">
-            <div className="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-on-surface-variant font-label-sm text-label-sm">Énergie validée par l'admin</p>
-                <p className="font-headline-xl text-2xl text-primary font-bold mt-1">
-                  {metrics.caloriesCurrent} <span className="text-label-md text-on-surface-variant font-normal">/ {metrics.caloriesGoal} kcal</span>
-                </p>
-              </div>
-              <span className="material-symbols-outlined text-4xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-            </div>
+          {error && <div style={{ backgroundColor: COLORS.errorContainer, padding: "12px", borderRadius: "16px", marginBottom: "16px" }}>{error}</div>}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-primary-fixed text-on-primary-fixed-variant p-4 rounded-xl">
-                <p className="text-label-sm font-medium opacity-80">Protéines</p>
-                <p className="text-xl font-bold mt-1">{metrics.protein}</p>
+          <div style={{ marginBottom: "32px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Baby size={20} color={COLORS.primary} /> Mes enfants
+            </h3>
+            {bebes.length === 0 ? (
+              <div style={{ backgroundColor: COLORS.surfaceContainerLowest, borderRadius: "20px", padding: "24px", textAlign: "center" }}>
+                <p style={{ marginBottom: "12px" }}>Aucun enfant enregistré.</p>
+                <button
+                  onClick={() => navigate("/profil-bebe")}
+                  style={{ backgroundColor: COLORS.primary, color: "white", border: "none", borderRadius: "999px", padding: "8px 20px", fontWeight: 600 }}
+                >
+                  Ajouter un enfant
+                </button>
               </div>
-              <div className="bg-secondary-fixed text-on-secondary-fixed-variant p-4 rounded-xl">
-                <p className="text-label-sm font-medium opacity-80">Fibres alimentaires</p>
-                <p className="text-xl font-bold mt-1">{metrics.fiber}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section Prochain Repas en Vedette */}
-        {prochainRepas && (
-          <section className="mb-stack-md">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-headline-lg text-lg font-bold text-primary">Prochain repas planifié</h3>
-              <span className="bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">
-                À {prochainRepas.heure.substring(0, 5)}
-              </span>
-            </div>
-            
-            <div className="bg-white rounded-xl overflow-hidden border border-outline-variant flex flex-col sm:flex-row shadow-sm">
-              <div className="sm:w-44 h-44 sm:h-auto relative bg-gray-100">
-                <img 
-                  className="w-full h-full object-cover" 
-                  alt={prochainRepas.repas.nom} 
-                  src={prochainRepas.repas.image || "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=200&h=200&q=80"} 
-                />
-              </div>
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="font-headline-lg-mobile text-on-surface font-bold text-lg">{prochainRepas.repas.nom}</h4>
-                    <span className="text-sm font-bold text-secondary">{prochainRepas.repas.cout_estime_fcfa} FCFA</span>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {bebes.map((bebe) => (
+                  <div key={bebe.id} style={{ backgroundColor: COLORS.surfaceContainerLowest, borderRadius: "20px", padding: "16px", display: "flex", alignItems: "center", gap: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                    <div style={{ width: "60px", height: "60px", borderRadius: "50%", backgroundColor: COLORS.surfaceContainer, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Baby size={32} color={COLORS.primary} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ fontSize: "16px", fontWeight: 700 }}>{bebe.nom}</h4>
+                      <p style={{ fontSize: "12px", color: COLORS.onSurfaceVariant }}>
+                        {calculerAge(bebe.date_naissance)} • {bebe.sexe === "M" ? "Garçon" : "Fille"}
+                      </p>
+                    </div>
+                    <button onClick={() => navigate("/repas")} style={{ background: "none", border: "none", color: COLORS.primary }}>
+                      <Calendar size={20} />
+                    </button>
                   </div>
-                  <p className="text-body-md text-sm text-on-surface-variant line-clamp-2">
-                    {prochainRepas.repas.description || "Recette préparée sur mesure pour les besoins nutritionnels de votre enfant."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Liste complète du programme du jour (Lecture seule avec rappels programmables) */}
-        <section className="mb-8">
-          <h3 className="font-headline-lg text-lg font-bold text-primary mb-3">Programme Alimentaire Global</h3>
-          <div className="space-y-3">
-            {repasProgrammes.map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-xl border border-outline-variant flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined">restaurant</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-on-surface text-sm">{item.repas.nom}</p>
-                    <p className="text-xs text-on-surface-variant">
-                      Prévu à {item.heure.substring(0, 5)} — <span className="font-semibold">{item.repas.cout_estime_fcfa} FCFA</span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Switcher pour activer/désactiver l'alarme de rappel du repas */}
-                <label className="relative inline-flex items-center cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={item.active_alarm} 
-                    onChange={() => handleAlarmToggle(item.id)} 
-                  />
-                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
-            ))}
-
-            {repasProgrammes.length === 0 && (
-              <div className="text-center p-8 bg-white rounded-xl border border-outline-variant border-dashed">
-                <p className="text-on-surface-variant font-body-md italic text-sm">
-                  Aucun menu n'a encore été programmé par l'administrateur pour aujourd'hui.
-                </p>
+                ))}
               </div>
             )}
           </div>
-        </section>
 
-      </main>
+          <div style={{ marginBottom: "32px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Heart size={20} color={COLORS.primary} /> Conseil du jour
+            </h3>
+            <div style={{ backgroundColor: COLORS.primaryFixed, borderRadius: "20px", padding: "20px" }}>
+              <p style={{ fontSize: "14px", lineHeight: "1.5", color: COLORS.onPrimaryFixed }}>
+                Variez les textures en fonction de l’âge : purées lisses dès 6 mois, puis morceaux mous vers 9 mois. Cela aide votre bébé à apprendre à mâcher.
+              </p>
+            </div>
+          </div>
 
-      <BottomNavBar />
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => navigate("/repas")}
+              style={{ flex: 1, backgroundColor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.outlineVariant}`, borderRadius: "40px", padding: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 600 }}
+            >
+              <Utensils size={18} /> Voir les repas
+            </button>
+            <button
+              onClick={() => navigate("/messagerie")}
+              style={{ flex: 1, backgroundColor: COLORS.primary, color: "white", border: "none", borderRadius: "40px", padding: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 600 }}
+            >
+              <MessageCircle size={18} /> Messagerie
+            </button>
+          </div>
+        </main>
+
+        <nav style={{
+          position: "sticky", bottom: 0, width: "100%", zIndex: 50,
+          display: "flex", justifyContent: "space-around", alignItems: "center",
+          padding: "10px 16px",
+          backgroundColor: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)",
+          borderTop: `1px solid ${COLORS.outlineVariant}30`,
+        }}>
+          {[
+            { icon: Home, label: "Accueil", path: "/dashboard" },
+            { icon: Utensils, label: "Repas", path: "/repas" },
+            { icon: MessageCircle, label: "Messages", path: "/messagerie" },
+            { icon: User, label: "Profil", path: "/profil" },
+          ].map((item) => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                background: "none", border: "none", cursor: "pointer",
+                color: window.location.pathname === item.path ? COLORS.primary : COLORS.onSurfaceVariant,
+              }}
+            >
+              <item.icon size={20} />
+              <span style={{ fontSize: "10px", marginTop: "2px" }}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
     </div>
   );
 }
+

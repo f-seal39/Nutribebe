@@ -1,98 +1,218 @@
+
 import axios from "axios";
 
-// Instance de base demandée par tes composants
+export const BASE_URL = "/api";
+
 export const api = axios.create({
-  baseURL: "http://127.0.0.1:9000/api/",
+  baseURL: `${BASE_URL}/`,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Helper to set auth token for subsequent requests
-export function setAuthToken(token) {
-  if (token) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  else delete api.defaults.headers.common["Authorization"];
+function unwrapList(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return data ?? [];
 }
 
-// --- AUTHENTIFICATION ---
-
-// Fonction de connexion (demandée par AuthContext.jsx)
-export const connexion = async (usernameOrPayload, password) => {
-  try {
-    let payload = usernameOrPayload;
-    if (typeof usernameOrPayload === "string" && password !== undefined) {
-      payload = { username: usernameOrPayload, password };
-    }
-    const response = await api.post("auth/connexion/", payload);
-    return response.data;
-  } catch (error) {
-    console.error("Erreur connexion :", error?.response || error);
-    throw error;
+export function setAuthToken(token) {
+  if (token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem("token", token);
+  } else {
+    delete api.defaults.headers.common["Authorization"];
+    localStorage.removeItem("token");
   }
+}
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (r) => r,
+  (error) => {
+    if (!error.response) {
+      error.message = "Impossible de joindre le serveur. Démarrez Django.";
+    } else if (error.response.status === 404) {
+      error.message = "Route API introuvable (404).";
+    }
+    return Promise.reject(error);
+  }
+);
+
+const storedToken = localStorage.getItem("token");
+if (storedToken) setAuthToken(storedToken);
+export const connexion = async (username, password) => {
+  // Si on reçoit déjà un objet, on l'utilise directement
+  let payload = { username, password };
+  console.log("Payload envoyé :", payload);
+  const response = await api.post("auth/connexion/", payload);
+  if (response.data?.token) setAuthToken(response.data.token);
+  return response.data;
 };
-// Alias au cas où un autre composant l'appelle login
+
 export const login = connexion;
 
-// Fonction d'inscription
-// export const inscription = async (donneesUtilisateur) => {
-//   try {
-//     const response = await api.post("auth/inscription/", donneesUtilisateur);
-//     return response.data;
-//   } catch (error) {
-//     console.error("Erreur inscription :", error);
-//     throw error;
-//   }
-// };
-
-// export const inscription = async (donnees) => {
-//   try {
-//     const response = await axios.post('/api/auth/inscription/', donnees); // Votre URL actuelle
-//     return response.data;
-//   } catch (error) {
-//     // On extrait le message détaillé du serveur s'il existe
-//     if (error.response && error.response.data) {
-//       console.error("Détails de l'erreur backend :", error.response.data);
-//       // Rejeter la promesse avec les vraies données d'erreur pour InscriptionMedecin.jsx
-//       throw error.response.data;
-//     }
-//     throw error;
-//   }
-// };
-
-// Fonction d'inscription corrigée utilisant l'instance 'api'
 export const inscription = async (donnees) => {
-  try {
-    // Utilisation de api.post à la place de axios.post
-    const response = await api.post("auth/inscription/", donnees); 
-    console.log(response);
-    return response.data;
-  } catch (error) {
-    if (error.response && error.response.data) {
-      console.error("Détails de l'erreur backend :", error.response.data);
-      throw error.response.data;
-    }
-    throw error;
-  }
+  const isFormData = donnees instanceof FormData;
+  const response = await api.post("auth/inscription/", donnees, isFormData ? {} : undefined);
+  if (response.data?.token) setAuthToken(response.data.token);
+  return response.data;
 };
 
+export const rafraichirToken = async (refresh) => {
+  const response = await api.post("auth/token/refresh/", { refresh });
+  if (response.data?.access) setAuthToken(response.data.access);
+  return response.data;
+};
 
-// --- PROFIL BÉBÉ ---
-
-// Double export pour couvrir toutes les variantes de nommage (avec et sans 'e')
+// --- PROFIL ---
 export const createBebe = async (donneesBebe) => {
-  try {
-    const response = await api.post("bebes/", donneesBebe);
-    return response.data;
-  } catch (error) {
-    console.error("Erreur lors de l'ajout du bébé :", error);
-    throw error;
-  }
+  const payload = {
+    nom: donneesBebe.nom ?? donneesBebe.nom_complet,
+    date_naissance: donneesBebe.date_naissance,
+    sexe: donneesBebe.sexe ?? "M",
+    poids_naissance: donneesBebe.poids_naissance,
+    taille_naissance: donneesBebe.taille_naissance,
+    ...(donneesBebe.region != null ? { region: donneesBebe.region } : {}),
+  };
+  const response = await api.post("profil/bebes/", payload);
+  return response.data;
 };
+
 export const creatBebe = createBebe;
+export const getBebes = async () => {
+  const response = await api.get("profil/bebes/");
+  return unwrapList(response.data);
+};
+export const getProfilMedecin = async () => {
+  const response = await api.get("profil/medecins/me/");
+  return response.data;
+};
 
+// --- NUTRITION ---
+export const getRepas = async (params = {}) => {
+  const response = await api.get("nutrition/repas/", { params });
+  return unwrapList(response.data);
+};
 
-// --- FONCTIONS GENERIQUES (Pour éviter les crashs d'imports) ---
-export const obtenirMesuresCroissance = async () => { return []; };
-export const ajouterMesureCroissance = async () => { return null; };
-export const getNotifications = async () => { return []; };
-export const getRapports = async () => { return []; };
+export const getAliments = async () => {
+  const response = await api.get("nutrition/aliments/");
+  return unwrapList(response.data);
+};
+
+export const creerRepas = async (payload) => {
+  const response = await api.post("nutrition/repas/", payload);
+  return response.data;
+};
+
+export const creerHoraireRepas = async (payload) => {
+  const response = await api.post("nutrition/horaires-repas/", payload);
+  return response.data;
+};
+
+export const creerAliment = async (payload) => {
+  const response = await api.post("nutrition/aliments/", payload);
+  return response.data;
+};
+
+export const creerComposition = async (payload) => {
+  const response = await api.post("nutrition/compositions/", payload);
+  return response.data;
+};
+
+export const publierRepasAuxFamilles = async (repasId) => {
+  const response = await api.post(`nutrition/repas/${repasId}/publier_aux_familles/`);
+  return response.data;
+};
+
+export const getRepasProgrammesAujourdhui = async () => {
+  const response = await api.get("nutrition/repas-programmes/aujourd_hui/");
+  return unwrapList(response.data);
+};
+
+export const toggleAlarmeRepas = async (id) => {
+  const response = await api.post(`nutrition/repas-programmes/${id}/toggle_alarm/`);
+  return response.data;
+};
+
+// --- TÉLÉCONSULTATION ---
+export const getConsultations = async () => {
+  const response = await api.get("teleconsultation/consultations/");
+  return unwrapList(response.data);
+};
+export const createConsultation = async (donnees) => {
+  const response = await api.post("teleconsultation/consultations/", donnees);
+  return response.data;
+};
+export const getCompositionRepas = async (repasId) => {
+  const response = await api.get(`nutrition/repas/${repasId}/composition/`);
+  return response.data;
+};
+
+// --- CROISSANCE ---
+export const obtenirMesuresCroissance = async () => {
+  const response = await api.get("croissance/mesures/");
+  return unwrapList(response.data);
+};
+export const ajouterMesureCroissance = async (donnees) => {
+  const response = await api.post("croissance/mesures/", donnees);
+  return response.data;
+};
+
+// --- NOTIFICATIONS & RAPPORTS ---
+export const getNotifications = async () => {
+  const response = await api.get("notifications/notifications/");
+  return unwrapList(response.data);
+};
+export const getRapports = async () => {
+  const response = await api.get("rapports/");
+  return unwrapList(response.data);
+};
+
+api.getBebes = getBebes;
+api.getRepas = getRepas;
+api.getAliments = getAliments;
+api.getRepasProgrammesAujourdhui = getRepasProgrammesAujourdhui;
+api.toggleAlarmeRepas = toggleAlarmeRepas;
+api.getConsultations = getConsultations;
+api.createConsultation = createConsultation;
+api.creerRepas = creerRepas;
+api.publierRepasAuxFamilles = publierRepasAuxFamilles;
+
+// --- ADMIN DASHBOARD ---
+export const getAdminStats = async () => {
+  const response = await api.get("admin/statistiques/");
+  return response.data;
+};
+export const getAdminUsers = async () => {
+  const response = await api.get("admin/utilisateurs/");
+  return response.data;
+};
+export const getAdminRepas = async () => {
+  const response = await api.get("admin/repas/");
+  return response.data;
+};
+export const getAdminBebes = async () => {
+  const response = await api.get("admin/bebes/");
+  return response.data;
+};
+export const getAdminMedecins = async () => {
+  const response = await api.get("admin/medecins/");
+  return response.data;
+};
+
+api.getAdminStats = getAdminStats;
+api.getAdminUsers = getAdminUsers;
+api.getAdminRepas = getAdminRepas;
+api.getAdminBebes = getAdminBebes;
+api.getAdminMedecins = getAdminMedecins;

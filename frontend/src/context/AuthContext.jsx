@@ -1,68 +1,70 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import { connexion } from "../services/api";
-//import { useAuth } from "../context/AuthContext";
-
+import { connexion, rafraichirToken, setAuthToken } from "../services/api";
+import { getHomeRouteForRole } from "../utils/authRoutes";
 
 const AuthContext = createContext();
-const BASE_URL = "http://localhost:8000/api";
 
 export function AuthProvider({ children }) {
-  const [utilisateur, setUtilisateur] = useState(
-    JSON.parse(localStorage.getItem("utilisateur")) || null
-  );
-
+  const [utilisateur, setUtilisateur] = useState(() => {
+    const stored = localStorage.getItem("utilisateur");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
     const refresh = localStorage.getItem("refresh");
     if (refresh && !localStorage.getItem("token")) {
-      rafraichirToken(refresh);
+      refreshAccessToken(refresh);
     }
     setChargement(false);
   }, []);
 
-  const rafraichirToken = async (refresh) => {
+  const refreshAccessToken = async (refresh) => {
     try {
-      const res = await fetch(`${BASE_URL}/auth/token/refresh/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
-      });
-      const data = await res.json();
-      if (data.access) localStorage.setItem("token", data.access);
+      const data = await rafraichirToken(refresh);
+      if (data?.access) {
+        setAuthToken(data.access);
+      }
     } catch (e) {
       console.error("Refresh expiré", e);
+      logout();
     }
   };
 
   const login = async (username, password) => {
     const data = await connexion(username, password);
     if (data.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("refresh", data.refresh);
-      localStorage.setItem("utilisateur", JSON.stringify(data.utilisateur));
-      setUtilisateur(data.utilisateur);
+      enregistrerSession(data);
       return { succes: true };
     }
     return { succes: false, erreur: data.error };
   };
 
+  const enregistrerSession = (data) => {
+    if (data?.token) setAuthToken(data.token);
+    if (data?.refresh) localStorage.setItem("refresh", data.refresh);
+    if (data?.utilisateur) {
+      localStorage.setItem("utilisateur", JSON.stringify(data.utilisateur));
+      setUtilisateur(data.utilisateur);
+    }
+    if (data?.profil) {
+      localStorage.setItem("profil", JSON.stringify(data.profil));
+      localStorage.setItem("profil_type", data.profil_type || "");
+    }
+  };
+
   const logout = () => {
-    localStorage.removeItem("token");
+    setAuthToken(null);
     localStorage.removeItem("refresh");
     localStorage.removeItem("utilisateur");
+    localStorage.removeItem("profil");
+    localStorage.removeItem("profil_type");
     setUtilisateur(null);
   };
 
-  // return (
-  //   <AuthContext.Provider value={{ utilisateur, login, logout }}>
-  //     {children}
-  //   </AuthContext.Provider>
-  // );
-
   return (
-    <AuthContext.Provider value={{ utilisateur, chargement, login, logout }}>
-      {!chargement ? children : <div style={{ color: "#fff", textAlign: "center", marginTop: "20%" }}>Chargement de l'application...</div>}
+    <AuthContext.Provider value={{ utilisateur, chargement, login, logout, enregistrerSession, getHomeRouteForRole }}>
+      {!chargement ? children : <div style={{ color: "#fff", textAlign: "center", marginTop: "20%" }}>Chargement...</div>}
     </AuthContext.Provider>
   );
 }

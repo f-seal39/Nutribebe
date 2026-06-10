@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { obtenirMesuresCroissance } from "../services/api"; // Ton lien vers Django si disponible
+import { obtenirMesuresCroissance } from "../services/api";
 import RepasModule from "../components/RepasModule";
 
 export default function Croissance() {
@@ -10,9 +10,12 @@ export default function Croissance() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Appel à ton API Django ou simulation
-    // obtenirMesuresCroissance().then(data => ... )
-    setLoading(false);
+    obtenirMesuresCroissance()
+      .then((data) => {
+        if (Array.isArray(data)) setMesures(data);
+      })
+      .catch((err) => console.error("Erreur chargement mesures :", err))
+      .finally(() => setLoading(false));
   }, [periode]);
 
   return (
